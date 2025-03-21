@@ -31,7 +31,7 @@ impl<T> Default for LinkedList<T> {
     }
 }
 
-impl<T: PartialOrd> LinkedList<T> {
+impl<T> LinkedList<T> {
     pub fn new() -> Self {
         Self {
             length: 0,
@@ -65,31 +65,39 @@ impl<T: PartialOrd> LinkedList<T> {
             },
         }
     }
-    pub fn merge(mut list_a: LinkedList<T>, mut list_b: LinkedList<T>) -> Self {
-        let mut len_a = list_a.length;
-        let mut len_b = list_b.length;
-        let mut new_list = LinkedList::new();
-        
-        while len_a > 0 || len_b > 0 {
-            let val_a = unsafe { *(list_a.get(len_a as i32).unwrap().clone()) };
-            let val_b = unsafe { *(list_b.get(len_b as i32).unwrap().clone()) };
-            if val_a < val_b {
-                new_list.add(val_a);
-                len_a += 1;
+
+    pub fn merge(list_a: LinkedList<T>, list_b: LinkedList<T>) -> Self
+    where
+        T: Clone + PartialOrd,
+    {
+        let mut result = LinkedList::new();
+
+        let mut current_a = list_a.start;
+        let mut current_b = list_b.start;
+
+        while current_a.is_some() || current_b.is_some() {
+            if current_b.is_none()
+                || (current_a.is_some()
+                    && unsafe {
+                        (*current_a.unwrap().as_ptr()).val <= (*current_b.unwrap().as_ptr()).val
+                    })
+            {
+                let node_ptr = current_a.unwrap();
+                let val = unsafe { (*node_ptr.as_ptr()).val.clone() };
+                current_a = unsafe { (*node_ptr.as_ptr()).next };
+
+                result.add(val);
             } else {
-                new_list.add(val_b);
-                len_b += 1;
+                let node_ptr = current_b.unwrap();
+                let val = unsafe { (*node_ptr.as_ptr()).val.clone() };
+                current_b = unsafe { (*node_ptr.as_ptr()).next };
+
+                result.add(val);
             }
         }
-        while len_a > 0 {
-            new_list.add(unsafe { *(list_a.get(len_a as i32).unwrap().clone()) });
-            len_a += 1;
-        }
-        while len_b > 0 {
-            new_list.add(unsafe { *(list_b.get(len_b as i32).unwrap().clone()) });
-            len_b += 1;
-        }
-        new_list
+
+        result.length = list_a.length + list_b.length;
+        result
     }
 }
 
@@ -184,4 +192,3 @@ mod tests {
         }
     }
 }
-
